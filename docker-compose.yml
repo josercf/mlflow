@@ -21,6 +21,16 @@ services:
       - prometheus
     ports:
       - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    configs:
+      - source: grafana_datasource
+        target: /etc/grafana/provisioning/datasources/datasource.yml
+      - source: grafana_dashboard_config
+        target: /etc/grafana/provisioning/dashboards/dashboard.yml
+      - source: prometheus_dashboard
+        target: /var/lib/grafana/dashboards/prometheus.json
     volumes:
       - grafana-storage:/var/lib/grafana
 
@@ -36,6 +46,50 @@ configs:
         - job_name: 'mlflow'
           static_configs:
             - targets: ['host.docker.internal:5000']
+            
+  grafana_datasource:
+    content: |
+      apiVersion: 1
+      datasources:
+        - name: Prometheus
+          type: prometheus
+          access: proxy
+          url: http://prometheus:9090
+          isDefault: true
+          editable: true
+          
+  grafana_dashboard_config:
+    content: |
+      apiVersion: 1
+      providers:
+        - name: 'default'
+          orgId: 1
+          folder: ''
+          type: file
+          disableDeletion: false
+          updateIntervalSeconds: 10
+          options:
+            path: /var/lib/grafana/dashboards
+            
+  prometheus_dashboard:
+    content: |
+      {
+        "dashboard": {
+          "title": "Prometheus Overview",
+          "panels": [
+            {
+              "title": "Up Targets",
+              "type": "stat",
+              "targets": [
+                {
+                  "expr": "up",
+                  "refId": "A"
+                }
+              ]
+            }
+          ]
+        }
+      }
 
 volumes:
   grafana-storage:
