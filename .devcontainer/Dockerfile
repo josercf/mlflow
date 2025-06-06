@@ -1,5 +1,5 @@
 # Use a imagem oficial de Dev Container para .NET 8 + Python 3.11 + R no Debian
-FROM mcr.microsoft.com/devcontainers/dotnet:8-bullseye
+FROM mcr.microsoft.com/devcontainers/dotnet:8.0-bookworm
 
 # Instalar Python 3 e pip (caso não esteja incluído)
 RUN apt-get update \
