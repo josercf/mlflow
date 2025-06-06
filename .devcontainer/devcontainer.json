@@ -1,0 +1,25 @@
+{
+  "name": "DevContainer AutoML .NET + Python + R + MLOps",
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-dotnettools.csharp",
+        "ms-python.python",
+        "ikappas.r",
+        "ms-azuretools.vscode-docker",
+        "graphviz.graphviz-preview"
+      ]
+    }
+  },
+  "forwardPorts": [
+    5000,
+    9090,
+    3000
+  ],
+  "postCreateCommand": "dotnet restore src/AutoMLDemo/AutoMLDemo.csproj && pip install mlflow prometheus-client && Rscript -e \"install.packages('mlflow', repos='https://cloud.r-project.org/')\"",
+  "remoteUser": "vscode"
+}
