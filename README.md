@@ -2,45 +2,47 @@
 ├── .devcontainer/
 │   ├── devcontainer.json          # Configuração do Dev Container
 │   └── Dockerfile                 # Dockerfile base para Dev Container
-├── docker-compose.yml             # Compose para API, Prometheus e Grafana
-├── Dockerfile                     # Dockerfile da API ML.NET
+├── docker-compose.yml             # Compose para Prometheus e Grafana
 ├── prometheus.yml                 # Configuração do Prometheus
-├── test.sh                        # Script de build e testes
 ├── src/
 │   └── AutoMLDemo/
-│       ├── AutoMLDemo.csproj      # Projeto Web API .NET
-│       ├── Program.cs             # Host da API e métricas
-│       ├── Controllers/           # Endpoints da API
-│       ├── Services/              # Serviço de ML.NET
-│       ├── DTOs/                  # Modelos de requisição/resposta
-│       ├── Models/                # Tipos de dados do ML.NET
+│       ├── AutoMLDemo.csproj      # Projeto .NET
+│       ├── Program.cs             # Código principal de AutoML e métricas
+│       ├── MetricServer.cs        # Servidor Prometheus (exposição de métricas)
 │       └── dataset/
-│           └── ratings.csv        # Dataset de exemplo
+│           └── movies.csv         # Exemplo de dataset (recomendação de filmes)
 └── README.md
 
 ## Como usar
 
-1. Abra o repositório no GitHub Codespaces ou VS Code com Remote Containers.
-2. Aguarde a criação do Dev Container (instala .NET 8, Python, R e pacotes necessários).
-3. Coloque o arquivo `ratings.csv` em `src/AutoMLDemo/dataset/`.
-4. Execute o script de teste para subir a API e os serviços de monitoramento:
+1. Abra o repositório no GitHub Codespaces (ou em VS Code com Remote – Containers).
+2. Aguarde a criação do Dev Container (instala .NET 8, Python, R e pacotes MLflow, prometheus-client).
+3. Coloque o arquivo `movies.csv` em `src/AutoMLDemo/dataset/`.
+4. No terminal integrado do Codespace, execute:
    ```bash
-   ./test.sh
+   dotnet run --project src/AutoMLDemo/AutoMLDemo.csproj
    ```
-5. Acesse:
-   - API ML.NET: http://localhost:5000
-   - Swagger: http://localhost:5000/swagger
-   - Prometheus: http://localhost:9090
-   - Grafana: http://localhost:3000 (admin/admin123)
+   Isso iniciará o experimento AutoML, exibirá métricas no console e exporá métricas Prometheus em http://localhost:5000/metrics.
+5. Em outro terminal, inicie Prometheus e Grafana:
+   ```bash
+   docker-compose up -d
+   ```
+6. Acesse o Prometheus em http://localhost:9090 para verificar alvos.
+7. Acesse o Grafana em http://localhost:3000 (usuário padrão: admin / admin).
+   - Adicione um Data Source do tipo Prometheus apontando para http://prometheus:9090.
+   - Crie dashboards para as métricas model_r2 e model_rmse.
 
 Dependências
-- Docker e Docker Compose
 - .NET 8 SDK
-- Python 3.x (instalado no Dev Container)
-- R 4.x (instalado no Dev Container)
+- Microsoft.ML (>= 2.0.0)
+- Microsoft.ML.AutoML (preview)
+- prometheus-net (>= 6.0.0)
+- Python 3.x + pacotes: mlflow, prometheus-client
+- R 4.x + pacote: mlflow
+- Docker (para Prometheus e Grafana)
 
 Referências
-- Documentação do ML.NET AutoML
-- Projeto prometheus-net
+- Tutoriais ML.NET AutoML em .NET (Microsoft Docs)
+- Exemplo de recomendação de filmes com Model Builder
+- Prometheus .NET Client
 - Grafana Documentation
-

@@ -1,38 +1,65 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using AutoMLDemo.Services;
+using System;
+using Microsoft.ML;
+using Microsoft.ML.AutoML;
+using Microsoft.ML.Data;
 
-var builder = WebApplication.CreateBuilder(args);
-
-builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen();
-builder.Services.AddSingleton<IMLService, MLService>();
-
-builder.Logging.AddConsole();
-
-var app = builder.Build();
-
-if (app.Environment.IsDevelopment())
+namespace AutoMLDemo
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
+    public class MovieRating
+    {
+        [LoadColumn(0)] public float UserId { get; set; }
+        [LoadColumn(1)] public float MovieId { get; set; }
+        [LoadColumn(2)] public float Label { get; set; }
+    }
+
+    public class MovieRatingPrediction
+    {
+        public float Score { get; set; }
+    }
+
+    class Program
+    {
+        static void Main(string[] args)
+        {
+            MetricServer.Start(port: 5000);
+
+            var mlContext = new MLContext(seed: 0);
+
+            string datasetPath = "dataset/movies.csv";
+            IDataView data = mlContext.Data.LoadFromTextFile<MovieRating>(
+                path: datasetPath,
+                hasHeader: true,
+                separatorChar: ',');
+
+            var split = mlContext.Data.TrainTestSplit(data, testFraction: 0.2);
+
+            var experimentSettings = new RegressionExperimentSettings
+            {
+                MaxExperimentTimeInSeconds = 60,
+                OptimizingMetric = RegressionMetric.RSquared
+            };
+            var experiment = mlContext.Auto().CreateRegressionExperiment(experimentSettings);
+
+            Console.WriteLine("Iniciando experimento AutoML para regressao...");
+            var result = experiment.Execute(trainData: split.TrainSet, labelColumnName: "Label");
+            Console.WriteLine($"Melhor modelo: {result.BestRun.TrainerName}");
+            Console.WriteLine($"R\u00b2 treino: {result.BestRun.ValidationMetrics.RSquared:F4}, RMSE treino: {result.BestRun.ValidationMetrics.RootMeanSquaredError:F4}");
+
+            var model = result.BestRun.Model;
+            var predictions = model.Transform(split.TestSet);
+            var metrics = mlContext.Regression.Evaluate(predictions, labelColumnName: "Label");
+
+            Console.WriteLine($"R\u00b2 teste: {metrics.RSquared:F4}, RMSE teste: {metrics.RootMeanSquaredError:F4}");
+
+            MetricServer.SetMetrics(r2: metrics.RSquared, rmse: metrics.RootMeanSquaredError);
+
+            var predictionEngine = mlContext.Model.CreatePredictionEngine<MovieRating, MovieRatingPrediction>(model);
+            var sample = new MovieRating { UserId = 1, MovieId = 10 };
+            var prediction = predictionEngine.Predict(sample);
+            Console.WriteLine($"Predicao para usuario 1 no filme 10: {prediction.Score:F4}");
+
+            Console.WriteLine("Pressione qualquer tecla para encerrar...");
+            Console.ReadKey();
+        }
+    }
 }
-
-app.UseRouting();
-app.MapControllers();
-
-app.UseMetricServer();
-app.UseHttpMetrics();
-
-Console.WriteLine("\uD83D\uDE80 API ML.NET iniciada!");
-Console.WriteLine("\uD83D\uDCCA M\u00e9tricas: http://localhost:5000/metrics");
-Console.WriteLine("\uD83D\uDD0D Swagger: http://localhost:5000/swagger");
-Console.WriteLine("\u2764\uFE0F  Health: http://localhost:5000/api/prediction/health");
-Console.WriteLine("\n\uD83D\uDCCB Exemplo de uso:");
-Console.WriteLine("POST http://localhost:5000/api/prediction/predict");
-Console.WriteLine("Content-Type: application/json");
-Console.WriteLine("{\n  \"userId\": 1,\n  \"movieId\": 10\n}");
-
-await app.RunAsync();
