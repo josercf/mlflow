@@ -8,11 +8,20 @@
 
   <ItemGroup>
     <!-- Pacotes ML.NET -->
-    <PackageReference Include="Microsoft.ML" Version="2.0.0" />
-    <PackageReference Include="Microsoft.ML.AutoML" Version="0.19.0-preview" />
-    <PackageReference Include="Microsoft.ML.Data" Version="2.0.0" />
+    <PackageReference Include="Microsoft.ML" Version="5.0.0-preview.1.25127.4" />
+    <PackageReference Include="Microsoft.ML.AutoML" Version="0.23.0-preview.1.25127.4" />
 
     <!-- Cliente Prometheus para .NET -->
     <PackageReference Include="prometheus-net" Version="6.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copia dataset/movies.csv para a saída da compilação -->
+    <None Include="dataset\movies.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Include="dataset\ratings.csv">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 </Project>

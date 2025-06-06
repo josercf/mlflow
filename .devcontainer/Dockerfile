@@ -1,21 +1,28 @@
 # Use a imagem oficial de Dev Container para .NET 8 + Python 3.11 + R no Debian
 
-FROM mcr.microsoft.com/devcontainers/dotnet:8-bullseye
+FROM mcr.microsoft.com/dotnet/sdk:8.0-noble
 
-
-# Instalar Python 3 e pip (caso não esteja incluído)
+# 1. Atualizar repositório e instalar Python 3, pip e R-base
+# Atualiza repos e instala dependências mínimas + Docker CLI + plugin docker-compose
 RUN apt-get update \
-    && apt-get install -y python3 python3-pip r-base \
-    && apt-get clean -y \
+    && apt-get install -y --no-install-recommends \
+         ca-certificates \
+         curl \
+         lsb-release \
+         gnupg \
+    && \
+    # Instalação do repositório oficial do Docker
+    mkdir -m 0755 -p /etc/apt/keyrings && \
+    curl -fsSL https://download.docker.com/linux/debian/gpg | gpg --dearmor -o /etc/apt/keyrings/docker.gpg && \
+    echo \
+      "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] \
+      https://download.docker.com/linux/debian \
+      $(lsb_release -cs) stable" \
+      > /etc/apt/sources.list.d/docker.list && \
+    apt-get update \
+    && apt-get install -y --no-install-recommends \
+         docker-ce-cli \
+         docker-compose-plugin \
     && rm -rf /var/lib/apt/lists/*
 
-# Instalar MLflow para Python
-RUN pip3 install mlflow prometheus-client
 
-# Instalar o pacote mlflow no R
-RUN R -e "install.packages('mlflow', repos='https://cloud.r-project.org/')"
-
-# Instalar cliente Prometheus para .NET (no momento do build do projeto .NET, será feito dotnet add package)
-# Apenas garanta que o ambiente .NET esteja pronto
-
-# Configurar usuário vscode como padrão (imagem já define isso)
